@@ -43,13 +43,16 @@ public class JobStatus {
     /** Start time of the job. */
     private String startTime;
 
+    /** End time of the job. */
+    private String endTime;
+
+    /** Duration of the job. */
+    private String duration;
+
     /** Update time of the job. */
     private String updateTime;
 
-    private String endTime;
-
-    private String duration;
-
+    /** Job plan. */
     private String jobPlan;
 
     /** Information about pending and last savepoint for the job. */

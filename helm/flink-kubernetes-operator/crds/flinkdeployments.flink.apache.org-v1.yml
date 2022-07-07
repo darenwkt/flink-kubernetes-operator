@@ -9131,6 +9131,12 @@ spec:
                     type: string
                   startTime:
                     type: string
+                  endTime:
+                    type: string
+                  duration:
+                    type: string
+                  jobPlan:
+                    type: string
                   updateTime:
                     type: string
                   savepointInfo:
