@@ -133,10 +133,6 @@ public abstract class JobStatusObserver<CTX> {
         jobStatus.setEndTime(String.valueOf(clusterJobStatus.getEndTime()));
         jobStatus.setJobPlan(clusterJobStatus.getJsonPlan());
         jobStatus.setDuration(String.valueOf(clusterJobStatus.getDuration()));
-        LOG.info(
-                "!!!! Previous Job Status: {}, Current Job Status: {}",
-                previousJobStatus,
-                jobStatus);
 
         if (jobStatus.getState().equals(previousJobStatus)) {
             LOG.info("Job status ({}) unchanged", previousJobStatus);
