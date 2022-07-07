@@ -67,6 +67,7 @@ import org.apache.flink.runtime.rest.messages.EmptyMessageParameters;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.JobsOverviewHeaders;
 import org.apache.flink.runtime.rest.messages.TriggerId;
+import org.apache.flink.runtime.rest.messages.job.JobDetailsInfo;
 import org.apache.flink.runtime.rest.messages.job.savepoints.SavepointDisposalRequest;
 import org.apache.flink.runtime.rest.messages.job.savepoints.SavepointDisposalTriggerHeaders;
 import org.apache.flink.runtime.rest.messages.job.savepoints.SavepointInfo;
@@ -107,13 +108,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -376,6 +371,31 @@ public class FlinkService {
                                     .toSeconds(),
                             TimeUnit.SECONDS);
         }
+    }
+
+    public Collection<JobDetailsInfo> listJobsInfo(Configuration conf) throws Exception {
+
+        Collection<JobStatusMessage> multipleJobStatusMessage = listJobs(conf);
+        Collection<JobDetailsInfo> multipleJobDetailsInfo = new ArrayList<>();
+
+        try (RestClusterClient<String> clusterClient =
+                (RestClusterClient<String>) getClusterClient(conf)) {
+
+            for (JobStatusMessage jobStatusMessage : multipleJobStatusMessage) {
+                JobDetailsInfo jobDetailsInfo =
+                        clusterClient
+                                .getJobDetails(jobStatusMessage.getJobId())
+                                .get(
+                                        configManager
+                                                .getOperatorConfiguration()
+                                                .getFlinkClientTimeout()
+                                                .toSeconds(),
+                                        TimeUnit.SECONDS);
+                multipleJobDetailsInfo.add(jobDetailsInfo);
+            }
+        }
+
+        return multipleJobDetailsInfo;
     }
 
     public JobResult requestJobResult(Configuration conf, JobID jobID) throws Exception {

@@ -23,7 +23,7 @@ import org.apache.flink.kubernetes.operator.crd.status.JobStatus;
 import org.apache.flink.kubernetes.operator.reconciler.ReconciliationUtils;
 import org.apache.flink.kubernetes.operator.service.FlinkService;
 import org.apache.flink.kubernetes.operator.utils.EventRecorder;
-import org.apache.flink.runtime.client.JobStatusMessage;
+import org.apache.flink.runtime.rest.messages.job.JobDetailsInfo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,9 +59,9 @@ public abstract class JobStatusObserver<CTX> {
         var jobStatus = resource.getStatus().getJobStatus();
         LOG.info("Observing job status");
         var previousJobStatus = jobStatus.getState();
-        List<JobStatusMessage> clusterJobStatuses;
+        List<JobDetailsInfo> clusterJobStatuses;
         try {
-            clusterJobStatuses = new ArrayList<>(flinkService.listJobs(deployedConfig));
+            clusterJobStatuses = new ArrayList<>(flinkService.listJobsInfo(deployedConfig));
         } catch (Exception e) {
             LOG.error("Exception while listing jobs", e);
             ifRunningMoveToReconciling(jobStatus, previousJobStatus);
@@ -72,7 +72,7 @@ public abstract class JobStatusObserver<CTX> {
         }
 
         if (!clusterJobStatuses.isEmpty()) {
-            Optional<JobStatusMessage> targetJobStatusMessage =
+            Optional<JobDetailsInfo> targetJobStatusMessage =
                     filterTargetJob(jobStatus, clusterJobStatuses);
             if (targetJobStatusMessage.isEmpty()) {
                 jobStatus.setState(org.apache.flink.api.common.JobStatus.RECONCILING.name());
@@ -109,8 +109,8 @@ public abstract class JobStatusObserver<CTX> {
      * @return The target job status message. If no matched job found, {@code Optional.empty()} will
      *     be returned.
      */
-    protected abstract Optional<JobStatusMessage> filterTargetJob(
-            JobStatus status, List<JobStatusMessage> clusterJobStatuses);
+    protected abstract Optional<JobDetailsInfo> filterTargetJob(
+            JobStatus status, List<JobDetailsInfo> clusterJobStatuses);
 
     /**
      * Update the status in CR according to the cluster job status.
@@ -121,15 +121,22 @@ public abstract class JobStatusObserver<CTX> {
      */
     private void updateJobStatus(
             AbstractFlinkResource<?, ?> resource,
-            JobStatusMessage clusterJobStatus,
+            JobDetailsInfo clusterJobStatus,
             Configuration deployedConfig) {
         var jobStatus = resource.getStatus().getJobStatus();
         var previousJobStatus = jobStatus.getState();
 
-        jobStatus.setState(clusterJobStatus.getJobState().name());
-        jobStatus.setJobName(clusterJobStatus.getJobName());
+        jobStatus.setState(clusterJobStatus.getJobStatus().name());
+        jobStatus.setJobName(clusterJobStatus.getName());
         jobStatus.setJobId(clusterJobStatus.getJobId().toHexString());
         jobStatus.setStartTime(String.valueOf(clusterJobStatus.getStartTime()));
+        jobStatus.setEndTime(String.valueOf(clusterJobStatus.getEndTime()));
+        jobStatus.setJobPlan(clusterJobStatus.getJsonPlan());
+        jobStatus.setDuration(String.valueOf(clusterJobStatus.getDuration()));
+        LOG.info(
+                "!!!! Previous Job Status: {}, Current Job Status: {}",
+                previousJobStatus,
+                jobStatus);
 
         if (jobStatus.getState().equals(previousJobStatus)) {
             LOG.info("Job status ({}) unchanged", previousJobStatus);
@@ -155,9 +162,9 @@ public abstract class JobStatusObserver<CTX> {
 
     private void setErrorIfPresent(
             AbstractFlinkResource<?, ?> resource,
-            JobStatusMessage clusterJobStatus,
+            JobDetailsInfo clusterJobStatus,
             Configuration deployedConfig) {
-        if (clusterJobStatus.getJobState() == org.apache.flink.api.common.JobStatus.FAILED) {
+        if (clusterJobStatus.getJobStatus() == org.apache.flink.api.common.JobStatus.FAILED) {
             try {
                 var result =
                         flinkService.requestJobResult(deployedConfig, clusterJobStatus.getJobId());

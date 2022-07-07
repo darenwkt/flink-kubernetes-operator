@@ -28,7 +28,7 @@ import org.apache.flink.kubernetes.operator.observer.context.ApplicationObserver
 import org.apache.flink.kubernetes.operator.service.FlinkService;
 import org.apache.flink.kubernetes.operator.utils.EventRecorder;
 import org.apache.flink.kubernetes.operator.utils.StatusRecorder;
-import org.apache.flink.runtime.client.JobStatusMessage;
+import org.apache.flink.runtime.rest.messages.job.JobDetailsInfo;
 
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 
@@ -57,8 +57,8 @@ public class ApplicationObserver extends AbstractDeploymentObserver {
                     }
 
                     @Override
-                    protected Optional<JobStatusMessage> filterTargetJob(
-                            JobStatus status, List<JobStatusMessage> clusterJobStatuses) {
+                    protected Optional<JobDetailsInfo> filterTargetJob(
+                            JobStatus status, List<JobDetailsInfo> clusterJobStatuses) {
                         if (!clusterJobStatuses.isEmpty()) {
                             return Optional.of(clusterJobStatuses.get(0));
                         }

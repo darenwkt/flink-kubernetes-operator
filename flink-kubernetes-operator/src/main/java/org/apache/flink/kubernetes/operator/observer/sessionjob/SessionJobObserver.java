@@ -31,7 +31,7 @@ import org.apache.flink.kubernetes.operator.service.FlinkService;
 import org.apache.flink.kubernetes.operator.utils.EventRecorder;
 import org.apache.flink.kubernetes.operator.utils.SavepointUtils;
 import org.apache.flink.kubernetes.operator.utils.StatusRecorder;
-import org.apache.flink.runtime.client.JobStatusMessage;
+import org.apache.flink.runtime.rest.messages.job.JobDetailsInfo;
 import org.apache.flink.util.Preconditions;
 
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -66,8 +66,8 @@ public class SessionJobObserver implements Observer<FlinkSessionJob> {
                     protected void onTimeout(VoidObserverContext sessionJobObserverContext) {}
 
                     @Override
-                    protected Optional<JobStatusMessage> filterTargetJob(
-                            JobStatus status, List<JobStatusMessage> clusterJobStatuses) {
+                    protected Optional<JobDetailsInfo> filterTargetJob(
+                            JobStatus status, List<JobDetailsInfo> clusterJobStatuses) {
                         var jobId =
                                 Preconditions.checkNotNull(
                                         status.getJobId(),
