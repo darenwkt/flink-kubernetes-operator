@@ -355,33 +355,56 @@ public class FlinkService {
         return false;
     }
 
-    public Collection<JobStatusMessage> listJobs(Configuration conf) throws Exception {
-        try (RestClusterClient<String> clusterClient =
-                (RestClusterClient<String>) getClusterClient(conf)) {
-            return clusterClient
-                    .sendRequest(
-                            JobsOverviewHeaders.getInstance(),
-                            EmptyMessageParameters.getInstance(),
-                            EmptyRequestBody.getInstance())
-                    .thenApply(FlinkService::toJobStatusMessage)
-                    .get(
-                            configManager
-                                    .getOperatorConfiguration()
-                                    .getFlinkClientTimeout()
-                                    .toSeconds(),
-                            TimeUnit.SECONDS);
-        }
-    }
+    //    public Collection<JobStatusMessage> listJobs(Configuration conf) throws Exception {
+    //        try (RestClusterClient<String> clusterClient =
+    //                (RestClusterClient<String>) getClusterClient(conf)) {
+    //            return clusterClient
+    //                    .sendRequest(
+    //                            JobsOverviewHeaders.getInstance(),
+    //                            EmptyMessageParameters.getInstance(),
+    //                            EmptyRequestBody.getInstance())
+    //                    .thenApply(FlinkService::toJobStatusMessage)
+    //                    .get(
+    //                            configManager
+    //                                    .getOperatorConfiguration()
+    //                                    .getFlinkClientTimeout()
+    //                                    .toSeconds(),
+    //                            TimeUnit.SECONDS);
+    //        }
+    //    }
 
-    public Collection<JobDetailsInfo> listJobsInfo(Configuration conf) throws Exception {
+    public Collection<JobDetailsInfo> listJobs(Configuration conf) throws Exception {
 
-        Collection<JobStatusMessage> multipleJobStatusMessage = listJobs(conf);
         Collection<JobDetailsInfo> multipleJobDetailsInfo = new ArrayList<>();
-
         try (RestClusterClient<String> clusterClient =
                 (RestClusterClient<String>) getClusterClient(conf)) {
+
+            Collection<JobStatusMessage> multipleJobStatusMessage =
+                    clusterClient
+                            .sendRequest(
+                                    JobsOverviewHeaders.getInstance(),
+                                    EmptyMessageParameters.getInstance(),
+                                    EmptyRequestBody.getInstance())
+                            .thenApply(FlinkService::toJobStatusMessage)
+                            .get(
+                                    configManager
+                                            .getOperatorConfiguration()
+                                            .getFlinkClientTimeout()
+                                            .toSeconds(),
+                                    TimeUnit.SECONDS);
+            LOG.info(
+                    "!!!!! multipleJobStatusMessage: {}, config: {}",
+                    multipleJobStatusMessage,
+                    conf);
 
             for (JobStatusMessage jobStatusMessage : multipleJobStatusMessage) {
+                LOG.info(
+                        "!!!! response: {}, clusterClient: {}",
+                        clusterClient
+                                .getJobDetails(jobStatusMessage.getJobId())
+                                .get(100, TimeUnit.SECONDS),
+                        clusterClient);
+
                 JobDetailsInfo jobDetailsInfo =
                         clusterClient
                                 .getJobDetails(jobStatusMessage.getJobId())

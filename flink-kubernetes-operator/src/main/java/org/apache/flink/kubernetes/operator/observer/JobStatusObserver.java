@@ -61,7 +61,7 @@ public abstract class JobStatusObserver<CTX> {
         var previousJobStatus = jobStatus.getState();
         List<JobDetailsInfo> clusterJobStatuses;
         try {
-            clusterJobStatuses = new ArrayList<>(flinkService.listJobsInfo(deployedConfig));
+            clusterJobStatuses = new ArrayList<>(flinkService.listJobs(deployedConfig));
         } catch (Exception e) {
             LOG.error("Exception while listing jobs", e);
             ifRunningMoveToReconciling(jobStatus, previousJobStatus);
