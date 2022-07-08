@@ -36,7 +36,7 @@ import org.apache.flink.kubernetes.operator.reconciler.ReconciliationUtils;
 import org.apache.flink.kubernetes.operator.utils.EventRecorder;
 import org.apache.flink.kubernetes.operator.utils.SavepointUtils;
 import org.apache.flink.kubernetes.operator.utils.StatusRecorder;
-import org.apache.flink.runtime.client.JobStatusMessage;
+import org.apache.flink.runtime.rest.messages.job.JobDetailsInfo;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
@@ -116,7 +116,7 @@ public class SessionJobReconcilerTest {
         reconciler.cleanup(sessionJob, TestUtils.createContextWithReadyFlinkDeployment());
         assertEquals(
                 org.apache.flink.api.common.JobStatus.FINISHED,
-                flinkService.listJobs().get(0).f1.getJobState());
+                flinkService.listJobs().get(0).f1.getJobStatus());
     }
 
     @Test
@@ -136,7 +136,7 @@ public class SessionJobReconcilerTest {
         reconciler.reconcile(sessionJob, TestUtils.createContextWithReadyFlinkDeployment());
         assertEquals(
                 org.apache.flink.api.common.JobStatus.FINISHED,
-                flinkService.listJobs().get(0).f1.getJobState());
+                flinkService.listJobs().get(0).f1.getJobStatus());
         reconciler.reconcile(sessionJob, TestUtils.createContextWithReadyFlinkDeployment());
         verifyAndSetRunningJobsToStatus(
                 sessionJob,
@@ -182,7 +182,7 @@ public class SessionJobReconcilerTest {
         reconciler.reconcile(statelessSessionJob, readyContext);
         assertEquals(
                 org.apache.flink.api.common.JobStatus.FINISHED,
-                flinkService.listJobs().get(0).f1.getJobState());
+                flinkService.listJobs().get(0).f1.getJobStatus());
         verifyJobState(statelessSessionJob, JobState.SUSPENDED, "FINISHED");
 
         flinkService.clear();
@@ -229,7 +229,7 @@ public class SessionJobReconcilerTest {
         // job suspended first
         assertEquals(
                 org.apache.flink.api.common.JobStatus.FINISHED,
-                flinkService.listJobs().get(0).f1.getJobState());
+                flinkService.listJobs().get(0).f1.getJobStatus());
         verifyJobState(statefulSessionJob, JobState.SUSPENDED, "FINISHED");
         assertEquals(
                 1,
@@ -389,8 +389,8 @@ public class SessionJobReconcilerTest {
         assertFalse(SavepointUtils.savepointInProgress(sp1SessionJob.getStatus().getJobStatus()));
     }
 
-    private Tuple2<String, JobStatusMessage> verifyAndReturnTheSubmittedJob(
-            FlinkSessionJob sessionJob, List<Tuple2<String, JobStatusMessage>> jobs) {
+    private Tuple2<String, JobDetailsInfo> verifyAndReturnTheSubmittedJob(
+            FlinkSessionJob sessionJob, List<Tuple2<String, JobDetailsInfo>> jobs) {
         var jobID = JobID.fromHexString(sessionJob.getStatus().getJobStatus().getJobId());
         var submittedJobInfo =
                 jobs.stream().filter(t -> t.f1.getJobId().equals(jobID)).findAny().get();
@@ -403,14 +403,14 @@ public class SessionJobReconcilerTest {
             JobState expectedState,
             String jobStatusObserved,
             @Nullable String expectedSavepointPath,
-            List<Tuple2<String, JobStatusMessage>> jobs) {
+            List<Tuple2<String, JobDetailsInfo>> jobs) {
 
         var submittedJobInfo = verifyAndReturnTheSubmittedJob(sessionJob, jobs);
         assertEquals(expectedSavepointPath, submittedJobInfo.f0);
 
         verifyJobState(sessionJob, expectedState, jobStatusObserved);
         JobStatus jobStatus = sessionJob.getStatus().getJobStatus();
-        jobStatus.setJobName(submittedJobInfo.f1.getJobName());
+        jobStatus.setJobName(submittedJobInfo.f1.getName());
         jobStatus.setState("RUNNING");
     }
 

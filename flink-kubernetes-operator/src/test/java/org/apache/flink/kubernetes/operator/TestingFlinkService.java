@@ -41,6 +41,7 @@ import org.apache.flink.kubernetes.operator.service.FlinkService;
 import org.apache.flink.kubernetes.operator.utils.FlinkUtils;
 import org.apache.flink.runtime.client.JobStatusMessage;
 import org.apache.flink.runtime.execution.ExecutionState;
+import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.SavepointConfigOptions;
 import org.apache.flink.runtime.jobmaster.JobResult;
 import org.apache.flink.runtime.messages.Acknowledge;
@@ -48,7 +49,11 @@ import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.runtime.messages.webmonitor.MultipleJobsDetails;
 import org.apache.flink.runtime.rest.messages.DashboardConfiguration;
 import org.apache.flink.runtime.rest.messages.EmptyResponseBody;
+import org.apache.flink.runtime.rest.messages.JobMessageParameters;
 import org.apache.flink.runtime.rest.messages.JobsOverviewHeaders;
+import org.apache.flink.runtime.rest.messages.job.JobDetailsHeaders;
+import org.apache.flink.runtime.rest.messages.job.JobDetailsInfo;
+import org.apache.flink.runtime.rest.messages.job.metrics.IOMetricsInfo;
 import org.apache.flink.util.SerializedThrowable;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -61,14 +66,7 @@ import io.javaoperatorsdk.operator.api.reconciler.dependent.managed.ManagedDepen
 
 import javax.annotation.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -87,7 +85,7 @@ public class TestingFlinkService extends FlinkService {
     private int savepointCounter = 0;
     private int triggerCounter = 0;
 
-    private final List<Tuple2<String, JobStatusMessage>> jobs = new ArrayList<>();
+    private final List<Tuple2<String, JobDetailsInfo>> jobs = new ArrayList<>();
     private final Map<JobID, String> jobErrors = new HashMap<>();
     private final Set<String> sessions = new HashSet<>();
     private boolean isPortReady = true;
@@ -157,14 +155,14 @@ public class TestingFlinkService extends FlinkService {
             throw new Exception("Cannot submit 2 application clusters at the same time");
         }
         JobID jobID = new JobID();
-        JobStatusMessage jobStatusMessage =
-                new JobStatusMessage(
+        JobDetailsInfo jobDetailsInfo =
+                createTestJobDetailsInfo(
                         jobID,
                         conf.getString(KubernetesConfigOptions.CLUSTER_ID),
                         JobStatus.RUNNING,
                         System.currentTimeMillis());
 
-        jobs.add(Tuple2.of(conf.get(SavepointConfigOptions.SAVEPOINT_PATH), jobStatusMessage));
+        jobs.add(Tuple2.of(conf.get(SavepointConfigOptions.SAVEPOINT_PATH), jobDetailsInfo));
     }
 
     @Override
@@ -197,19 +195,91 @@ public class TestingFlinkService extends FlinkService {
             throw new Exception("Deployment failure");
         }
         JobID jobID = new JobID();
-        JobStatusMessage jobStatusMessage =
-                new JobStatusMessage(
+        JobDetailsInfo jobDetailsInfo =
+                createTestJobDetailsInfo(
                         jobID,
                         conf.getString(KubernetesConfigOptions.CLUSTER_ID),
                         JobStatus.RUNNING,
                         System.currentTimeMillis());
 
-        jobs.add(Tuple2.of(savepoint, jobStatusMessage));
+        jobs.add(Tuple2.of(savepoint, jobDetailsInfo));
         return jobID;
     }
 
+    protected JobDetailsInfo createTestJobDetailsInfo(
+            JobID jobID, String jobName, JobStatus state, long jobStartTime) throws Exception {
+        final Random random = new Random();
+        final int numJobVertexDetailsInfos = 4;
+        final String jsonPlan = "{\"id\":\"1234\"}";
+
+        final Map<JobStatus, Long> timestamps = new HashMap<>(JobStatus.values().length);
+        final Collection<JobDetailsInfo.JobVertexDetailsInfo> jobVertexInfos =
+                new ArrayList<>(numJobVertexDetailsInfos);
+        final Map<ExecutionState, Integer> jobVerticesPerState =
+                new HashMap<>(ExecutionState.values().length);
+
+        for (JobStatus jobStatus : JobStatus.values()) {
+            timestamps.put(jobStatus, random.nextLong());
+        }
+
+        for (int i = 0; i < numJobVertexDetailsInfos; i++) {
+            jobVertexInfos.add(createJobVertexDetailsInfo(random));
+        }
+
+        for (ExecutionState executionState : ExecutionState.values()) {
+            jobVerticesPerState.put(executionState, random.nextInt());
+        }
+
+        return new JobDetailsInfo(
+                jobID,
+                jobName,
+                true,
+                state,
+                jobStartTime,
+                jobStartTime + 1L,
+                1L,
+                8888L,
+                1984L,
+                timestamps,
+                jobVertexInfos,
+                jobVerticesPerState,
+                jsonPlan);
+    }
+
+    private JobDetailsInfo.JobVertexDetailsInfo createJobVertexDetailsInfo(Random random) {
+        final Map<ExecutionState, Integer> tasksPerState =
+                new HashMap<>(ExecutionState.values().length);
+        final IOMetricsInfo jobVertexMetrics =
+                new IOMetricsInfo(
+                        random.nextLong(),
+                        random.nextBoolean(),
+                        random.nextLong(),
+                        random.nextBoolean(),
+                        random.nextLong(),
+                        random.nextBoolean(),
+                        random.nextLong(),
+                        random.nextBoolean());
+
+        for (ExecutionState executionState : ExecutionState.values()) {
+            tasksPerState.put(executionState, random.nextInt());
+        }
+
+        int parallelism = 1 + (random.nextInt() / 3);
+        return new JobDetailsInfo.JobVertexDetailsInfo(
+                new JobVertexID(),
+                "jobVertex" + random.nextLong(),
+                2 * parallelism,
+                parallelism,
+                ExecutionState.values()[random.nextInt(ExecutionState.values().length)],
+                random.nextLong(),
+                random.nextLong(),
+                random.nextLong(),
+                tasksPerState,
+                jobVertexMetrics);
+    }
+
     @Override
-    public Collection<JobStatusMessage> listJobs(Configuration conf) throws Exception {
+    public Collection<JobDetailsInfo> listJobs(Configuration conf) throws Exception {
         if (!isPortReady) {
             throw new TimeoutException("JM port is unavailable");
         }
@@ -220,12 +290,12 @@ public class TestingFlinkService extends FlinkService {
         this.listJobConsumer = listJobConsumer;
     }
 
-    public List<Tuple2<String, JobStatusMessage>> listJobs() {
+    public List<Tuple2<String, JobDetailsInfo>> listJobs() {
         return jobs;
     }
 
     public long getRunningCount() {
-        return jobs.stream().filter(t -> !t.f1.getJobState().isTerminalState()).count();
+        return jobs.stream().filter(t -> !t.f1.getJobStatus().isTerminalState()).count();
     }
 
     @Override
@@ -268,7 +338,9 @@ public class TestingFlinkService extends FlinkService {
                         throw new RuntimeException("Trying to list a job without submitting it");
                     }
                     return CompletableFuture.completedFuture(
-                            jobs.stream().map(t -> t.f1).collect(Collectors.toList()));
+                            jobs.stream()
+                                    .map(t -> toJobStatusMessage(t.f1))
+                                    .collect(Collectors.toList()));
                 });
 
         clusterClient.setStopWithSavepointFunction(
@@ -305,16 +377,40 @@ public class TestingFlinkService extends FlinkService {
                 (messageHeaders, messageParameters, requestBody) -> {
                     if (messageHeaders instanceof JobsOverviewHeaders) {
                         return CompletableFuture.completedFuture(getMultipleJobsDetails());
+                    } else if (messageHeaders instanceof JobDetailsHeaders) {
+                        JobID jobID =
+                                ((JobMessageParameters) messageParameters)
+                                        .jobPathParameter.getValue();
+
+                        Optional<Tuple2<String, JobDetailsInfo>> jobOpt =
+                                jobs.stream()
+                                        .filter(js -> js.f1.getJobId().equals(jobID))
+                                        .findAny();
+
+                        if (!jobOpt.isPresent()) {
+                            CompletableFuture.failedFuture(new Exception("Job not found"));
+                        }
+
+                        return CompletableFuture.completedFuture(jobOpt.get().f1);
                     }
+
                     return CompletableFuture.completedFuture(EmptyResponseBody.getInstance());
                 });
         return clusterClient;
     }
 
+    private JobStatusMessage toJobStatusMessage(JobDetailsInfo jobDetailsInfo) {
+        return new JobStatusMessage(
+                jobDetailsInfo.getJobId(),
+                jobDetailsInfo.getName(),
+                jobDetailsInfo.getJobStatus(),
+                jobDetailsInfo.getStartTime());
+    }
+
     private MultipleJobsDetails getMultipleJobsDetails() {
         return new MultipleJobsDetails(
                 jobs.stream()
-                        .map(tuple -> tuple.f1)
+                        .map(tuple -> toJobStatusMessage(tuple.f1))
                         .map(TestingFlinkService::toJobDetails)
                         .collect(Collectors.toList()));
     }
@@ -334,7 +430,7 @@ public class TestingFlinkService extends FlinkService {
 
     private String cancelJob(FlinkVersion flinkVersion, JobID jobID, boolean savepoint)
             throws Exception {
-        Optional<Tuple2<String, JobStatusMessage>> jobOpt =
+        Optional<Tuple2<String, JobDetailsInfo>> jobOpt =
                 jobs.stream().filter(js -> js.f1.getJobId().equals(jobID)).findAny();
 
         if (!jobOpt.isPresent()) {
@@ -344,13 +440,22 @@ public class TestingFlinkService extends FlinkService {
         var sp = savepoint ? "savepoint_" + savepointCounter++ : null;
 
         if (flinkVersion.isNewerVersionThan(FlinkVersion.v1_14)) {
-            JobStatusMessage oldStatus = jobOpt.get().f1;
+            JobDetailsInfo oldStatus = jobOpt.get().f1;
             jobOpt.get().f1 =
-                    new JobStatusMessage(
+                    new JobDetailsInfo(
                             oldStatus.getJobId(),
-                            oldStatus.getJobName(),
+                            oldStatus.getName(),
+                            oldStatus.isStoppable(),
                             JobStatus.FINISHED,
-                            oldStatus.getStartTime());
+                            oldStatus.getStartTime(),
+                            oldStatus.getEndTime(),
+                            oldStatus.getDuration(),
+                            oldStatus.getMaxParallelism(),
+                            oldStatus.getNow(),
+                            oldStatus.getTimestamps(),
+                            oldStatus.getJobVertexInfos(),
+                            oldStatus.getJobVerticesPerState(),
+                            oldStatus.getJsonPlan());
             jobOpt.get().f0 = sp;
         } else {
             jobs.removeIf(js -> js.f1.getJobId().equals(jobID));
@@ -382,15 +487,15 @@ public class TestingFlinkService extends FlinkService {
 
     @Override
     public Optional<Savepoint> getLastCheckpoint(JobID jobId, Configuration conf) throws Exception {
-        Optional<Tuple2<String, JobStatusMessage>> jobOpt =
+        Optional<Tuple2<String, JobDetailsInfo>> jobOpt =
                 jobs.stream().filter(js -> js.f1.getJobId().equals(jobId)).findAny();
 
         if (!jobOpt.isPresent()) {
             throw new Exception("Job not found");
         }
 
-        Tuple2<String, JobStatusMessage> t = jobOpt.get();
-        if (!t.f1.getJobState().isGloballyTerminalState()) {
+        Tuple2<String, JobDetailsInfo> t = jobOpt.get();
+        if (!t.f1.getJobStatus().isGloballyTerminalState()) {
             throw new Exception("Checkpoint should not be queried if job is not in terminal state");
         }
 
@@ -426,11 +531,20 @@ public class TestingFlinkService extends FlinkService {
         }
         var oldStatus = job.get().f1;
         job.get().f1 =
-                new JobStatusMessage(
+                new JobDetailsInfo(
                         oldStatus.getJobId(),
-                        oldStatus.getJobName(),
+                        oldStatus.getName(),
+                        oldStatus.isStoppable(),
                         JobStatus.FAILED,
-                        oldStatus.getStartTime());
+                        oldStatus.getStartTime(),
+                        oldStatus.getEndTime(),
+                        oldStatus.getDuration(),
+                        oldStatus.getMaxParallelism(),
+                        oldStatus.getNow(),
+                        oldStatus.getTimestamps(),
+                        oldStatus.getJobVertexInfos(),
+                        oldStatus.getJobVerticesPerState(),
+                        oldStatus.getJsonPlan());
         jobErrors.put(jobID, error);
     }
 

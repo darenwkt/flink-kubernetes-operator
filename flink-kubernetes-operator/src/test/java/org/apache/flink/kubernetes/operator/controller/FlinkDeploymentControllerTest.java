@@ -40,7 +40,7 @@ import org.apache.flink.kubernetes.operator.exception.DeploymentFailedException;
 import org.apache.flink.kubernetes.operator.reconciler.ReconciliationUtils;
 import org.apache.flink.kubernetes.operator.reconciler.deployment.AbstractFlinkResourceReconciler;
 import org.apache.flink.kubernetes.operator.utils.IngressUtils;
-import org.apache.flink.runtime.client.JobStatusMessage;
+import org.apache.flink.runtime.rest.messages.job.JobDetailsInfo;
 
 import io.fabric8.kubernetes.api.model.EventBuilder;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
@@ -178,10 +178,10 @@ public class FlinkDeploymentControllerTest {
 
         // Validate job status
         JobStatus jobStatus = appCluster.getStatus().getJobStatus();
-        JobStatusMessage expectedJobStatus = flinkService.listJobs().get(0).f1;
+        JobDetailsInfo expectedJobStatus = flinkService.listJobs().get(0).f1;
         assertEquals(expectedJobStatus.getJobId().toHexString(), jobStatus.getJobId());
-        assertEquals(expectedJobStatus.getJobName(), jobStatus.getJobName());
-        assertEquals(expectedJobStatus.getJobState().toString(), jobStatus.getState());
+        assertEquals(expectedJobStatus.getName(), jobStatus.getJobName());
+        assertEquals(expectedJobStatus.getJobStatus().toString(), jobStatus.getState());
         assertEquals(
                 appCluster.getStatus().getReconciliationStatus().getLastReconciledSpec(),
                 appCluster.getStatus().getReconciliationStatus().getLastStableSpec());
@@ -207,8 +207,8 @@ public class FlinkDeploymentControllerTest {
         jobStatus = appCluster.getStatus().getJobStatus();
         expectedJobStatus = flinkService.listJobs().get(0).f1;
         assertEquals(expectedJobStatus.getJobId().toHexString(), jobStatus.getJobId());
-        assertEquals(expectedJobStatus.getJobName(), jobStatus.getJobName());
-        assertEquals(expectedJobStatus.getJobState().toString(), jobStatus.getState());
+        assertEquals(expectedJobStatus.getName(), jobStatus.getJobName());
+        assertEquals(expectedJobStatus.getJobStatus().toString(), jobStatus.getState());
 
         // Validate last stable spec is still the old one
         assertEquals(
@@ -378,7 +378,7 @@ public class FlinkDeploymentControllerTest {
                         "file:///flink-data/savepoints");
 
         testController.reconcile(appCluster, context);
-        List<Tuple2<String, JobStatusMessage>> jobs = flinkService.listJobs();
+        List<Tuple2<String, JobDetailsInfo>> jobs = flinkService.listJobs();
         assertEquals(1, jobs.size());
         assertEquals("s0", jobs.get(0).f0);
         assertEquals(
@@ -386,7 +386,7 @@ public class FlinkDeploymentControllerTest {
                         "component=taskmanager,app=" + appCluster.getMetadata().getName(), 1),
                 appCluster.getStatus().getTaskManager());
 
-        List<Tuple2<String, JobStatusMessage>> previousJobs = new ArrayList<>(jobs);
+        List<Tuple2<String, JobDetailsInfo>> previousJobs = new ArrayList<>(jobs);
         appCluster.getSpec().getJob().setInitialSavepointPath("s1");
 
         // Send in a no-op change
@@ -466,7 +466,7 @@ public class FlinkDeploymentControllerTest {
         appCluster.getSpec().getJob().setInitialSavepointPath("s0");
 
         testController.reconcile(appCluster, context);
-        List<Tuple2<String, JobStatusMessage>> jobs = flinkService.listJobs();
+        List<Tuple2<String, JobDetailsInfo>> jobs = flinkService.listJobs();
         assertEquals(1, jobs.size());
         assertEquals("s0", jobs.get(0).f0);
 
@@ -635,10 +635,10 @@ public class FlinkDeploymentControllerTest {
         assertNotNull(ReconciliationUtils.getDeployedSpec(appCluster).getJob());
         // Verify jobStatus is running
         jobStatus = appCluster.getStatus().getJobStatus();
-        JobStatusMessage expectedJobStatus = flinkService.listJobs().get(0).f1;
+        JobDetailsInfo expectedJobStatus = flinkService.listJobs().get(0).f1;
         assertEquals(expectedJobStatus.getJobId().toHexString(), jobStatus.getJobId());
-        assertEquals(expectedJobStatus.getJobName(), jobStatus.getJobName());
-        assertEquals(expectedJobStatus.getJobState().toString(), jobStatus.getState());
+        assertEquals(expectedJobStatus.getName(), jobStatus.getJobName());
+        assertEquals(expectedJobStatus.getJobStatus().toString(), jobStatus.getState());
     }
 
     private void testUpgradeNotReadyCluster(FlinkDeployment appCluster) throws Exception {

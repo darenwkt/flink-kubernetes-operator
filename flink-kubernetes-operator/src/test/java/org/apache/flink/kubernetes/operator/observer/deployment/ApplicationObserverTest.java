@@ -35,7 +35,7 @@ import org.apache.flink.kubernetes.operator.reconciler.ReconciliationUtils;
 import org.apache.flink.kubernetes.operator.utils.EventRecorder;
 import org.apache.flink.kubernetes.operator.utils.FlinkUtils;
 import org.apache.flink.kubernetes.operator.utils.SavepointUtils;
-import org.apache.flink.runtime.client.JobStatusMessage;
+import org.apache.flink.runtime.rest.messages.job.JobDetailsInfo;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
@@ -381,14 +381,24 @@ public class ApplicationObserverTest {
         flinkService.setPortReady(true);
         observer.observe(deployment, readyContext);
         // Simulate Failed job
-        Tuple2<String, JobStatusMessage> jobTuple = flinkService.listJobs().get(0);
+        Tuple2<String, JobDetailsInfo> jobTuple = flinkService.listJobs().get(0);
         jobTuple.f0 = "last-SP";
+        JobDetailsInfo oldStatus = jobTuple.f1;
         jobTuple.f1 =
-                new JobStatusMessage(
-                        jobTuple.f1.getJobId(),
-                        jobTuple.f1.getJobName(),
+                new JobDetailsInfo(
+                        oldStatus.getJobId(),
+                        oldStatus.getName(),
+                        oldStatus.isStoppable(),
                         org.apache.flink.api.common.JobStatus.FAILED,
-                        jobTuple.f1.getStartTime());
+                        oldStatus.getStartTime(),
+                        oldStatus.getEndTime(),
+                        oldStatus.getDuration(),
+                        oldStatus.getMaxParallelism(),
+                        oldStatus.getNow(),
+                        oldStatus.getTimestamps(),
+                        oldStatus.getJobVertexInfos(),
+                        oldStatus.getJobVerticesPerState(),
+                        oldStatus.getJsonPlan());
         deployment.getStatus().getJobStatus().getSavepointInfo().setTriggerId("test");
         deployment.getStatus().getJobStatus().getSavepointInfo().setTriggerTimestamp(123L);
 
