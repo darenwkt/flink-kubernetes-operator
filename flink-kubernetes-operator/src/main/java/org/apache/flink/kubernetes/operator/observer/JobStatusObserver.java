@@ -28,6 +28,7 @@ import org.apache.flink.runtime.client.JobStatusMessage;
 import org.apache.flink.runtime.rest.messages.job.JobDetailsInfo;
 
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,9 +166,9 @@ public abstract class JobStatusObserver<CTX> {
 
         jobStatus.setState(clusterJobStatus.getJobStatus().name());
         jobStatus.setJobId(clusterJobStatus.getJobId().toHexString());
-        ObjectMapper Obj = new ObjectMapper();
+        ObjectMapper obj = new ObjectMapper();
         try {
-            jobStatus.setJobDetailsInfo(Obj.writeValueAsString(clusterJobStatus));
+            jobStatus.setJobDetailsInfo(obj.writeValueAsString(clusterJobStatus));
         } catch (IOException e){
             e.printStackTrace();
         }

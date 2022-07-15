@@ -126,7 +126,6 @@ public class ApplicationObserverTest {
                 deployment.getStatus().getJobManagerDeploymentStatus());
         assertEquals(JobState.RUNNING.name(), deployment.getStatus().getJobStatus().getState());
 
-
         // Test job manager is unavailable suddenly
         flinkService.setPortReady(false);
         observer.observe(deployment, readyContext);
