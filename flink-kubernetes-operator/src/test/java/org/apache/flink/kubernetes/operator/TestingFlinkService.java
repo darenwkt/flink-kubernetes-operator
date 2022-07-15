@@ -389,15 +389,7 @@ public class TestingFlinkService extends FlinkService {
         final Map<ExecutionState, Integer> tasksPerState =
                 new HashMap<>(ExecutionState.values().length);
         final IOMetricsInfo jobVertexMetrics =
-                new IOMetricsInfo(
-                        0L,
-                        true,
-                        0L,
-                        true,
-                        0L,
-                        true,
-                        0L,
-                        true);
+                new IOMetricsInfo(0L, true, 0L, true, 0L, true, 0L, true);
 
         for (ExecutionState executionState : ExecutionState.values()) {
             tasksPerState.put(executionState, 0);

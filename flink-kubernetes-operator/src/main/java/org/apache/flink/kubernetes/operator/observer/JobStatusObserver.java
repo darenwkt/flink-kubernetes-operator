@@ -169,7 +169,7 @@ public abstract class JobStatusObserver<CTX> {
         ObjectMapper obj = new ObjectMapper();
         try {
             jobStatus.setJobDetailsInfo(obj.writeValueAsString(clusterJobStatus));
-        } catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
