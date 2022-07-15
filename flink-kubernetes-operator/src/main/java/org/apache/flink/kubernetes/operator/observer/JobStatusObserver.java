@@ -166,11 +166,14 @@ public abstract class JobStatusObserver<CTX> {
 
         jobStatus.setState(clusterJobStatus.getJobStatus().name());
         jobStatus.setJobId(clusterJobStatus.getJobId().toHexString());
-        ObjectMapper obj = new ObjectMapper();
-        try {
-            jobStatus.setJobDetailsInfo(obj.writeValueAsString(clusterJobStatus));
-        } catch (IOException e) {
-            e.printStackTrace();
+
+        if (resource.getSpec().isJobStatusIncludesJobDetailsInfo() == true) {
+            try {
+                jobStatus.setJobDetailsInfo(
+                        new ObjectMapper().writeValueAsString(clusterJobStatus));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         if (jobStatus.getState().equals(previousJobStatus)) {

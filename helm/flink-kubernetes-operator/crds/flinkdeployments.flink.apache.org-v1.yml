@@ -9083,6 +9083,9 @@ spec:
                 additionalProperties:
                   type: string
                 type: object
+              jobStatusIncludesJobDetailsInfo:
+                type: boolean
+                default: false
             type: object
           status:
             properties:

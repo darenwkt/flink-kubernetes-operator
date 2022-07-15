@@ -45,4 +45,7 @@ public abstract class AbstractFlinkSpec {
 
     /** Flink configuration overrides for the Flink deployment or Flink session job. */
     private Map<String, String> flinkConfiguration;
+
+    /** Configuration to include JobDetailsInfo in JobStatus */
+    private boolean jobStatusIncludesJobDetailsInfo;
 }
