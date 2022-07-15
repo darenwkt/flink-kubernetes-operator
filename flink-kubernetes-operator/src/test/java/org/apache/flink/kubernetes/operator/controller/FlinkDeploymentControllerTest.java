@@ -180,7 +180,6 @@ public class FlinkDeploymentControllerTest {
         JobStatus jobStatus = appCluster.getStatus().getJobStatus();
         JobStatusMessage expectedJobStatus = flinkService.listJobs().get(0).f1;
         assertEquals(expectedJobStatus.getJobId().toHexString(), jobStatus.getJobId());
-        assertEquals(expectedJobStatus.getJobName(), jobStatus.getJobName());
         assertEquals(expectedJobStatus.getJobState().toString(), jobStatus.getState());
         assertEquals(
                 appCluster.getStatus().getReconciliationStatus().getLastReconciledSpec(),
@@ -207,7 +206,6 @@ public class FlinkDeploymentControllerTest {
         jobStatus = appCluster.getStatus().getJobStatus();
         expectedJobStatus = flinkService.listJobs().get(0).f1;
         assertEquals(expectedJobStatus.getJobId().toHexString(), jobStatus.getJobId());
-        assertEquals(expectedJobStatus.getJobName(), jobStatus.getJobName());
         assertEquals(expectedJobStatus.getJobState().toString(), jobStatus.getState());
 
         // Validate last stable spec is still the old one
@@ -637,7 +635,6 @@ public class FlinkDeploymentControllerTest {
         jobStatus = appCluster.getStatus().getJobStatus();
         JobStatusMessage expectedJobStatus = flinkService.listJobs().get(0).f1;
         assertEquals(expectedJobStatus.getJobId().toHexString(), jobStatus.getJobId());
-        assertEquals(expectedJobStatus.getJobName(), jobStatus.getJobName());
         assertEquals(expectedJobStatus.getJobState().toString(), jobStatus.getState());
     }
 

@@ -31,6 +31,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class JobStatus {
+    @Deprecated
     /** Name of the job. */
     private String jobName;
 
@@ -40,20 +41,16 @@ public class JobStatus {
     /** Last observed state of the job. */
     private String state;
 
+    @Deprecated
     /** Start time of the job. */
     private String startTime;
 
+    @Deprecated
     /** Update time of the job. */
     private String updateTime;
 
     /** End time of the job. */
-    private String endTime;
-
-    /** Duration of the job. */
-    private String duration;
-
-    /** Job plan. */
-    private String jobPlan;
+    private String jobDetailsInfo;
 
     /** Information about pending and last savepoint for the job. */
     private SavepointInfo savepointInfo = new SavepointInfo();

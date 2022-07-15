@@ -341,7 +341,6 @@ public class TestingFlinkService extends FlinkService {
                             return CompletableFuture.failedFuture(new Exception("Job not found"));
                         }
 
-                        final Random random = new Random();
                         final int numJobVertexDetailsInfos = 4;
                         final String jsonPlan = "{\"id\":\"1234\"}";
 
@@ -353,15 +352,15 @@ public class TestingFlinkService extends FlinkService {
                                 new HashMap<>(ExecutionState.values().length);
 
                         for (JobStatus jobStatus : JobStatus.values()) {
-                            timestamps.put(jobStatus, random.nextLong());
+                            timestamps.put(jobStatus, 0l);
                         }
 
                         for (int i = 0; i < numJobVertexDetailsInfos; i++) {
-                            jobVertexInfos.add(createJobVertexDetailsInfo(random));
+                            jobVertexInfos.add(createJobVertexDetailsInfo());
                         }
 
                         for (ExecutionState executionState : ExecutionState.values()) {
-                            jobVerticesPerState.put(executionState, random.nextInt());
+                            jobVerticesPerState.put(executionState, 0);
                         }
 
                         JobDetailsInfo jobDetailsInfo =
@@ -387,34 +386,34 @@ public class TestingFlinkService extends FlinkService {
         return clusterClient;
     }
 
-    private JobDetailsInfo.JobVertexDetailsInfo createJobVertexDetailsInfo(Random random) {
+    private JobDetailsInfo.JobVertexDetailsInfo createJobVertexDetailsInfo() {
         final Map<ExecutionState, Integer> tasksPerState =
                 new HashMap<>(ExecutionState.values().length);
         final IOMetricsInfo jobVertexMetrics =
                 new IOMetricsInfo(
-                        random.nextLong(),
-                        random.nextBoolean(),
-                        random.nextLong(),
-                        random.nextBoolean(),
-                        random.nextLong(),
-                        random.nextBoolean(),
-                        random.nextLong(),
-                        random.nextBoolean());
+                        0l,
+                        true,
+                        0l,
+                        true,
+                        0l,
+                        true,
+                        0l,
+                        true);
 
         for (ExecutionState executionState : ExecutionState.values()) {
-            tasksPerState.put(executionState, random.nextInt());
+            tasksPerState.put(executionState, 0);
         }
 
-        int parallelism = 1 + (random.nextInt() / 3);
+        int parallelism = 3;
         return new JobDetailsInfo.JobVertexDetailsInfo(
-                new JobVertexID(),
-                "jobVertex" + random.nextLong(),
+                new JobVertexID(0l, 0l),
+                "jobVertex",
                 2 * parallelism,
                 parallelism,
-                ExecutionState.values()[random.nextInt(ExecutionState.values().length)],
-                random.nextLong(),
-                random.nextLong(),
-                random.nextLong(),
+                ExecutionState.values()[ExecutionState.values().length-1],
+                0l,
+                0l,
+                0l,
                 tasksPerState,
                 jobVertexMetrics);
     }

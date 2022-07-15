@@ -126,18 +126,6 @@ public class ApplicationObserverTest {
                 deployment.getStatus().getJobManagerDeploymentStatus());
         assertEquals(JobState.RUNNING.name(), deployment.getStatus().getJobStatus().getState());
 
-        assertEquals(
-                deployment.getMetadata().getName(),
-                deployment.getStatus().getJobStatus().getJobName());
-        assertTrue(
-                Long.valueOf(deployment.getStatus().getJobStatus().getUpdateTime())
-                                .compareTo(
-                                        Long.valueOf(
-                                                deployment
-                                                        .getStatus()
-                                                        .getJobStatus()
-                                                        .getStartTime()))
-                        >= 0);
 
         // Test job manager is unavailable suddenly
         flinkService.setPortReady(false);
@@ -410,7 +398,6 @@ public class ApplicationObserverTest {
     private void bringToReadyStatus(FlinkDeployment deployment) {
         ReconciliationUtils.updateStatusForDeployedSpec(deployment, new Configuration());
         JobStatus jobStatus = new JobStatus();
-        jobStatus.setJobName("jobname");
         jobStatus.setJobId(null);
         jobStatus.setState(JobState.RUNNING.name());
         deployment.getStatus().setJobStatus(jobStatus);

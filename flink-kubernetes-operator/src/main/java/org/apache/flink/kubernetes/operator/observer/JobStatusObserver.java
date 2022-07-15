@@ -27,9 +27,11 @@ import org.apache.flink.kubernetes.operator.utils.EventRecorder;
 import org.apache.flink.runtime.client.JobStatusMessage;
 import org.apache.flink.runtime.rest.messages.job.JobDetailsInfo;
 
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -162,12 +164,13 @@ public abstract class JobStatusObserver<CTX> {
         var previousJobStatus = jobStatus.getState();
 
         jobStatus.setState(clusterJobStatus.getJobStatus().name());
-        jobStatus.setJobName(clusterJobStatus.getName());
         jobStatus.setJobId(clusterJobStatus.getJobId().toHexString());
-        jobStatus.setStartTime(String.valueOf(clusterJobStatus.getStartTime()));
-        jobStatus.setEndTime(String.valueOf(clusterJobStatus.getEndTime()));
-        jobStatus.setJobPlan(clusterJobStatus.getJsonPlan());
-        jobStatus.setDuration(String.valueOf(clusterJobStatus.getDuration()));
+        ObjectMapper Obj = new ObjectMapper();
+        try {
+            jobStatus.setJobDetailsInfo(Obj.writeValueAsString(clusterJobStatus));
+        } catch (IOException e){
+            e.printStackTrace();
+        }
 
         if (jobStatus.getState().equals(previousJobStatus)) {
             LOG.info("Job status ({}) unchanged", previousJobStatus);

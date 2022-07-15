@@ -24,7 +24,7 @@
 
 image:
   repository: flink-kubernetes-operator
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: latest
 
 imagePullSecrets: []

@@ -78,21 +78,11 @@ spec:
                 type: object
               jobStatus:
                 properties:
-                  jobName:
-                    type: string
                   jobId:
                     type: string
                   state:
                     type: string
-                  startTime:
-                    type: string
-                  updateTime:
-                    type: string
-                  endTime:
-                    type: string
-                  duration:
-                    type: string
-                  jobPlan:
+                  jobDetailsInfo:
                     type: string
                   savepointInfo:
                     properties:
