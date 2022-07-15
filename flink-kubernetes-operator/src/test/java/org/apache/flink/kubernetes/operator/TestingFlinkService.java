@@ -73,7 +73,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -352,7 +351,7 @@ public class TestingFlinkService extends FlinkService {
                                 new HashMap<>(ExecutionState.values().length);
 
                         for (JobStatus jobStatus : JobStatus.values()) {
-                            timestamps.put(jobStatus, 0l);
+                            timestamps.put(jobStatus, 0L);
                         }
 
                         for (int i = 0; i < numJobVertexDetailsInfos; i++) {
@@ -391,13 +390,13 @@ public class TestingFlinkService extends FlinkService {
                 new HashMap<>(ExecutionState.values().length);
         final IOMetricsInfo jobVertexMetrics =
                 new IOMetricsInfo(
-                        0l,
+                        0L,
                         true,
-                        0l,
+                        0L,
                         true,
-                        0l,
+                        0L,
                         true,
-                        0l,
+                        0L,
                         true);
 
         for (ExecutionState executionState : ExecutionState.values()) {
@@ -406,14 +405,14 @@ public class TestingFlinkService extends FlinkService {
 
         int parallelism = 3;
         return new JobDetailsInfo.JobVertexDetailsInfo(
-                new JobVertexID(0l, 0l),
+                new JobVertexID(0L, 0L),
                 "jobVertex",
                 2 * parallelism,
                 parallelism,
-                ExecutionState.values()[ExecutionState.values().length-1],
-                0l,
-                0l,
-                0l,
+                ExecutionState.values()[ExecutionState.values().length - 1],
+                0L,
+                0L,
+                0L,
                 tasksPerState,
                 jobVertexMetrics);
     }
