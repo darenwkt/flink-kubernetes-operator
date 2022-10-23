@@ -23,6 +23,7 @@ import org.apache.flink.kubernetes.operator.config.FlinkConfigManager;
 import org.apache.flink.kubernetes.operator.crd.FlinkSessionJob;
 import org.apache.flink.kubernetes.operator.crd.status.FlinkSessionJobStatus;
 import org.apache.flink.kubernetes.operator.crd.status.JobStatus;
+import org.apache.flink.kubernetes.operator.exception.MissingSessionJobException;
 import org.apache.flink.kubernetes.operator.observer.AbstractFlinkResourceObserver;
 import org.apache.flink.kubernetes.operator.observer.JobStatusObserver;
 import org.apache.flink.kubernetes.operator.observer.SavepointObserver;
@@ -218,7 +219,8 @@ public class FlinkSessionJobObserver
                     .getJobStatus()
                     .setState(org.apache.flink.api.common.JobStatus.RECONCILING.name());
             LOG.error(MISSING_SESSION_JOB_ERR);
-            ReconciliationUtils.updateForReconciliationError(sessionJob, MISSING_SESSION_JOB_ERR);
+            ReconciliationUtils.updateForReconciliationError(
+                    sessionJob, new MissingSessionJobException(MISSING_SESSION_JOB_ERR));
             eventRecorder.triggerEvent(
                     sessionJob,
                     EventRecorder.Type.Warning,

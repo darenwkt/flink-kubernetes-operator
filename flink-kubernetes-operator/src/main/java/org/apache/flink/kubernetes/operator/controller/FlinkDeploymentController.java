@@ -143,7 +143,7 @@ public class FlinkDeploymentController
         LOG.error("Flink Deployment failed", dfe);
         flinkApp.getStatus().setJobManagerDeploymentStatus(JobManagerDeploymentStatus.ERROR);
         flinkApp.getStatus().getJobStatus().setState(JobStatus.RECONCILING.name());
-        ReconciliationUtils.updateForReconciliationError(flinkApp, dfe.getMessage());
+        ReconciliationUtils.updateForReconciliationError(flinkApp, dfe);
         eventRecorder.triggerEvent(
                 flinkApp,
                 EventRecorder.Type.Warning,

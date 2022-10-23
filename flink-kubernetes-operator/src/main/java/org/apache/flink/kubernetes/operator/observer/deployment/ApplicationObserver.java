@@ -22,6 +22,7 @@ import org.apache.flink.kubernetes.operator.config.FlinkConfigManager;
 import org.apache.flink.kubernetes.operator.crd.FlinkDeployment;
 import org.apache.flink.kubernetes.operator.crd.status.FlinkDeploymentStatus;
 import org.apache.flink.kubernetes.operator.crd.status.JobStatus;
+import org.apache.flink.kubernetes.operator.exception.UnknownJobException;
 import org.apache.flink.kubernetes.operator.observer.ClusterHealthObserver;
 import org.apache.flink.kubernetes.operator.observer.JobStatusObserver;
 import org.apache.flink.kubernetes.operator.observer.SavepointObserver;
@@ -117,7 +118,8 @@ public class ApplicationObserver extends AbstractFlinkDeploymentObserver {
                     .setState(org.apache.flink.api.common.JobStatus.RECONCILING.name());
             String err = "Unrecognized Job for Application deployment";
             logger.error(err);
-            ReconciliationUtils.updateForReconciliationError(deployment, err);
+            ReconciliationUtils.updateForReconciliationError(
+                    deployment, new UnknownJobException(err));
             eventRecorder.triggerEvent(
                     deployment,
                     EventRecorder.Type.Warning,

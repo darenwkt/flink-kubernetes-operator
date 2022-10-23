@@ -19,48 +19,32 @@ package org.apache.flink.kubernetes.operator.crd.spec;
 
 import org.apache.flink.annotation.Experimental;
 import org.apache.flink.kubernetes.operator.reconciler.diff.DiffResult;
-import org.apache.flink.kubernetes.operator.reconciler.diff.DiffType;
 import org.apache.flink.kubernetes.operator.reconciler.diff.Diffable;
 import org.apache.flink.kubernetes.operator.reconciler.diff.ReflectiveDiffBuilder;
-import org.apache.flink.kubernetes.operator.reconciler.diff.SpecDiff;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
-import java.util.Map;
+import java.util.List;
 
-import static org.apache.flink.kubernetes.operator.config.KubernetesOperatorConfigOptions.K8S_OP_CONF_PREFIX;
-
-/** The common spec. */
+/** Exception processing spec. */
 @Experimental
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@SuperBuilder
-public abstract class AbstractFlinkSpec implements Diffable<AbstractFlinkSpec> {
+@Builder
+public class ExceptionSpec implements Diffable<ExceptionSpec> {
 
-    /** Job specification for application deployments/session job. Null for session clusters. */
-    private JobSpec job;
+    /** Exception specification to include stack trace in CRD. */
+    private boolean stackTraceEnabled;
 
-    /**
-     * Nonce used to manually trigger restart for the cluster/session job. In order to trigger
-     * restart, change the number to anything other than the current value.
-     */
-    private Long restartNonce;
-
-    /** Flink configuration overrides for the Flink deployment or Flink session job. */
-    @SpecDiff.Config({
-        @SpecDiff.Entry(prefix = "parallelism.default", type = DiffType.IGNORE),
-        @SpecDiff.Entry(prefix = K8S_OP_CONF_PREFIX, type = DiffType.IGNORE),
-    })
-    private Map<String, String> flinkConfiguration;
-
-    private ExceptionSpec exception;
+    /** Exception specification to filter exceptions from stack trace and include in CRD. */
+    private List<String> exceptionFilters;
 
     @Override
-    public DiffResult<AbstractFlinkSpec> diff(AbstractFlinkSpec spec) {
+    public DiffResult<ExceptionSpec> diff(ExceptionSpec spec) {
         return new ReflectiveDiffBuilder<>(this, spec).build();
     }
 }

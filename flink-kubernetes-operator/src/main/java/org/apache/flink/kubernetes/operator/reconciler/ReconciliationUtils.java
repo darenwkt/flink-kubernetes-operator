@@ -31,7 +31,7 @@ import org.apache.flink.kubernetes.operator.crd.status.ReconciliationState;
 import org.apache.flink.kubernetes.operator.crd.status.SavepointInfo;
 import org.apache.flink.kubernetes.operator.crd.status.SavepointTriggerType;
 import org.apache.flink.kubernetes.operator.crd.status.TaskManagerInfo;
-import org.apache.flink.kubernetes.operator.exception.ReconciliationException;
+import org.apache.flink.kubernetes.operator.exception.ValidationException;
 import org.apache.flink.kubernetes.operator.utils.FlinkUtils;
 import org.apache.flink.kubernetes.operator.utils.StatusRecorder;
 import org.apache.flink.util.Preconditions;
@@ -52,6 +52,7 @@ import java.util.Optional;
 
 import static org.apache.flink.api.common.JobStatus.FINISHED;
 import static org.apache.flink.api.common.JobStatus.RUNNING;
+import static org.apache.flink.kubernetes.operator.utils.FlinkResourceExceptionUtils.updateFlinkResourceException;
 
 /** Reconciliation utilities. */
 public class ReconciliationUtils {
@@ -172,8 +173,8 @@ public class ReconciliationUtils {
     }
 
     public static void updateForReconciliationError(
-            AbstractFlinkResource<?, ?> target, String error) {
-        target.getStatus().setError(error);
+            AbstractFlinkResource<?, ?> target, Throwable error) {
+        updateFlinkResourceException(error, target);
     }
 
     public static <T> T clone(T object) {
@@ -360,7 +361,8 @@ public class ReconciliationUtils {
         var status = deployment.getStatus();
         if (!validationError.equals(status.getError())) {
             LOG.error("Validation failed: " + validationError);
-            ReconciliationUtils.updateForReconciliationError(deployment, validationError);
+            ReconciliationUtils.updateForReconciliationError(
+                    deployment, new ValidationException(validationError));
         }
 
         var lastReconciledSpec = status.getReconciliationStatus().deserializeLastReconciledSpec();
@@ -406,9 +408,7 @@ public class ReconciliationUtils {
                                 r.isLastAttempt()));
 
         statusRecorder.updateStatusFromCache(resource);
-        ReconciliationUtils.updateForReconciliationError(
-                resource,
-                (e instanceof ReconciliationException) ? e.getCause().toString() : e.toString());
+        ReconciliationUtils.updateForReconciliationError(resource, e);
         statusRecorder.patchAndCacheStatus(resource);
 
         // Status was updated already, no need to return anything
